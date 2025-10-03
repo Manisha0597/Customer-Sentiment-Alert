@@ -1,5 +1,3 @@
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/<Manisha0597>/<Customer-Sentiment-Alert>/blob/main/Code.ipynb)
-
 # 🚨 Customer Sentiment Alert (CSA Agent)
 
 ## 📌 Problem
