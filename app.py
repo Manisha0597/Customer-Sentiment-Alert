@@ -1,46 +1,34 @@
 import streamlit as st
 from transformers import pipeline
-import pandas as pd
-import matplotlib.pyplot as plt
+import math
 
-# Load sentiment model
-sentiment = pipeline("sentiment-analysis")
+# Load model
+sentiment_pipeline = pipeline('sentiment-analysis')
 
-st.set_page_config(page_title="Customer Sentiment Alert", layout="wide")
-st.title("📊 Customer Sentiment Alert System")
-st.write("Upload reviews/tweets and get instant sentiment with urgency scoring.")
+def urgency_score(sentiment, reach=1, is_mention=False):
+    label = sentiment.get('label', 'NEUTRAL').upper()
+    score = sentiment.get('score', 0.0)
+    base = 0.0
+    if label in ('NEGATIVE','LABEL_0','NEG'):
+        base = 0.6 + 0.4*score
+    elif label in ('POSITIVE','LABEL_1','POS'):
+        base = 0.1*score
+    else:
+        base = 0.2
+    reach_factor = math.log1p(reach)/10.0
+    mention_factor = 0.15 if is_mention else 0.0
+    urgency = min(1.0, base + reach_factor + mention_factor)
+    return round(urgency,3)
 
-# Text input
-user_input = st.text_area("✍️ Enter customer feedback here:", "")
-
-def urgency_score(result):
-    if result['label'] == 'NEGATIVE':
-        return round(result['score'] * 100, 2)
-    return 0
+# ---- UI ----
+st.title("🚨 Customer Sentiment Alert")
+feedback = st.text_area("Enter customer feedback:")
+reach = st.number_input("Reach (No. of people affected)", min_value=1, value=10)
+is_mention = st.checkbox("Is this a direct mention?")
 
 if st.button("Analyze"):
-    if user_input.strip() != "":
-        result = sentiment(user_input)[0]
-        score = urgency_score(result)
-
-        st.subheader("🔎 Analysis Result")
-        st.write(f"**Sentiment:** {result['label']}")
-        st.write(f"**Confidence:** {result['score']:.2f}")
-        st.write(f"**Urgency Score:** {score}")
-
-        # DataFrame for visualization
-        df = pd.DataFrame([{
-            "Sentiment": result['label'],
-            "Confidence": result['score'],
-            "Urgency": score
-        }])
-
-        st.dataframe(df)
-
-        # Bar chart
-        fig, ax = plt.subplots()
-        ax.bar(["Urgency Score"], [score])
-        ax.set_ylim(0, 100)
-        st.pyplot(fig)
-    else:
-        st.warning("Please enter some feedback to analyze.")
+    sentiment = sentiment_pipeline(feedback)[0]
+    urgency = urgency_score(sentiment, reach, is_mention)
+    st.write("### Results")
+    st.write(f"**Sentiment:** {sentiment['label']} (Score: {sentiment['score']:.3f})")
+    st.write(f"**Urgency Score:** {urgency}")
