@@ -1,2 +1,9 @@
 transformers
 scikit-learn
+torch
+pandas
+matplotlib
+seaborn
+streamlit
+fastapi
+uvicorn
